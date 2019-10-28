@@ -4,12 +4,10 @@ import android.graphics.*
 import android.graphics.drawable.Drawable
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.view.View
-import androidx.annotation.CheckResult
+import android.widget.ImageView
 import androidx.lifecycle.lifecycleScope
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
 
 
@@ -28,20 +26,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun step1LoadOrigImages() {
         lifecycleScope.launch {
-            undoBtn.isEnabled = false
-
-            processLongTask {
-                val drawable: Deferred<Drawable> = getImageAsync()
-                imageView.setImageDrawable(drawable.await())
-            }
-
-            grayscaleBtn.isEnabled = true
+            // TODO need to get our image
         }
     }
 
-    private suspend fun getImageAsync() = withContext(Dispatchers.IO) {
-        async { Drawable.createFromStream(resources.openRawResource(R.raw.flows_in_flows), null) }
+    /*
+    private fun getImageAsync() = withContext(Dispatchers.IO) {
+        Drawable.createFromStream(resources.openRawResource(R.raw.flows_in_flows), null)
     }
+    */
 
     // endregion
 
@@ -49,34 +42,25 @@ class MainActivity : AppCompatActivity() {
 
     private fun step2ApplyGrayscale() {
         grayscaleBtn.setOnClickListener {
-            applyGrayscale()
+            // TODO
         }
         undoBtn.setOnClickListener {
-            step1LoadOrigImages()
+            // TODO
         }
     }
 
     private fun applyGrayscale() {
-        lifecycleScope.launch {
-            grayscaleBtn.isEnabled = false
-
-            processLongTask {
-                imageView.setImageBitmap(getCuteGrayImagesFlowAsync().await().firstOrNull())
-            }
-
-            undoBtn.isEnabled = true
-        }
+        // process long task
+        // imageView.setImageBitmap(getGrayImagesFlowAsync().await().firstOrNull())
     }
 
     private suspend fun getBitmapsFromApiAsync() = withContext(Dispatchers.IO) {
         async { arrayOf(BitmapFactory.decodeStream(resources.openRawResource(R.raw.flows_in_flows))) }
     }
 
-    private suspend fun getCuteGrayImagesFlowAsync() = withContext(Dispatchers.IO) {
-        async { flowOf(*getBitmapsFromApiAsync().await())
-            .map { it.toGrayscale() }
-            .toList()
-        }
+    private suspend fun getGrayImagesFlowAsync() = withContext(Dispatchers.IO) {
+        // TODO make each image grayscale
+        // use Bitmap.toGrayscale
     }
 
     // endregion
@@ -84,88 +68,17 @@ class MainActivity : AppCompatActivity() {
     // region step 3
 
     private fun step3Rotate() {
-        rotateLeftBtn.clicks()
-            .debounce(400)
-            .onEach {
-                imageView.rotation = imageView.rotation - 90f
-            }
-            .launchIn(lifecycleScope)
+        // TODO add click listener for left rotation
 
-        rotateRightBtn.clicks()
-            .debounce(400)
-            .onEach {
-                imageView.rotation = imageView.rotation + 90f
-            }
-            .launchIn(lifecycleScope)
+        // TODO add click listener for right rotation
     }
 
-    // endregion
-
-    // region helpers
-
-    private suspend fun Bitmap.toGrayscale() = withContext(Dispatchers.IO) {
-        val origBitmap = this@toGrayscale
-
-        val grayColorMatrix = floatArrayOf(
-            0.3f,
-            0.59f,
-            0.11f,
-            0f,
-            0f,
-            0.3f,
-            0.59f,
-            0.11f,
-            0f,
-            0f,
-            0.3f,
-            0.59f,
-            0.11f,
-            0f,
-            0f,
-            0f,
-            0f,
-            0f,
-            1f,
-            0f
-        )
-        val newBitmap = Bitmap.createBitmap(
-            origBitmap.width,
-            origBitmap.height,
-            origBitmap.config
-        )
-
-        val canvas = Canvas(newBitmap)
-        val paint = Paint()
-        val filter = ColorMatrixColorFilter(grayColorMatrix)
-        paint.colorFilter = filter
-        canvas.drawBitmap(origBitmap, 0f, 0f, paint)
-
-        origBitmap.recycle()
-
-        newBitmap
+    private fun rotateLeft(imageView: ImageView) {
+        imageView.rotate(-90f)
     }
 
-    private suspend fun processLongTask(task: suspend () -> Unit) {
-        progressBar.show()
-        delay(1000)
-        task.invoke()
-        progressBar.hide()
-    }
-
-    // useful methods pulled from Corbind: https://github.com/LDRAlighieri/Corbind
-
-    @CheckResult
-    fun View.clicks(): Flow<Unit> = channelFlow {
-        setOnClickListener(listener(this, ::offer))
-        awaitClose { setOnClickListener(null) }
-    }
-
-    @CheckResult
-    private fun listener(
-        scope: CoroutineScope,
-        emitter: (Unit) -> Boolean
-    ) = View.OnClickListener {
-        if (scope.isActive) { emitter(Unit) }
+    private fun rotateRight(imageView: ImageView) {
+        imageView.rotate(90f)
     }
 
     // endregion
