@@ -25,9 +25,7 @@ class MainActivity : AppCompatActivity() {
     // region step 1
 
     private fun step1LoadOrigImages() {
-        lifecycleScope.launch {
-            // TODO need to get our image
-        }
+        // TODO need to get our image
     }
 
     /*
