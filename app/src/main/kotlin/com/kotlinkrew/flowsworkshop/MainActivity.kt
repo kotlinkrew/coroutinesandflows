@@ -25,14 +25,14 @@ class MainActivity : AppCompatActivity() {
     // region step 1
 
     private fun step1LoadOrigImages() {
-        // TODO need to get our image
+        lifecycleScope.launch {
+            imageView.setImageDrawable(getImageAsync())
+        }
     }
 
-    /*
-    private fun getImageAsync() = withContext(Dispatchers.IO) {
+    private suspend fun getImageAsync() = withContext(Dispatchers.IO) {
         Drawable.createFromStream(resources.openRawResource(R.raw.flows_in_flows), null)
     }
-    */
 
     // endregion
 
@@ -40,16 +40,24 @@ class MainActivity : AppCompatActivity() {
 
     private fun step2ApplyGrayscale() {
         grayscaleBtn.setOnClickListener {
-            // TODO
+            lifecycleScope.launch {
+                processLongTask(progressBar) {
+                    applyGrayscale()
+                }
+            }
         }
         undoBtn.setOnClickListener {
-            // TODO
+            lifecycleScope.launch {
+                processLongTask(progressBar) {
+                    step1LoadOrigImages()
+                }
+            }
         }
     }
 
-    private fun applyGrayscale() {
+    private suspend fun applyGrayscale() {
         // process long task
-        // imageView.setImageBitmap(getGrayImagesFlowAsync().await().firstOrNull())
+        imageView.setImageBitmap(getGrayImagesFlowAsync().first())
     }
 
     private suspend fun getBitmapsFromApiAsync() = withContext(Dispatchers.IO) {
@@ -57,8 +65,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun getGrayImagesFlowAsync() = withContext(Dispatchers.IO) {
-        // TODO make each image grayscale
-        // use Bitmap.toGrayscale
+        flowOf(*getBitmapsFromApiAsync().await())
+            .map {
+                it.toGrayscale()
+            }
     }
 
     // endregion
@@ -66,9 +76,19 @@ class MainActivity : AppCompatActivity() {
     // region step 3
 
     private fun step3Rotate() {
-        // TODO add click listener for left rotation
+        rotateLeftBtn.clicks()
+            .debounce(400)
+            .onEach {
+                rotateLeft(imageView)
+            }
+            .launchIn(lifecycleScope)
 
-        // TODO add click listener for right rotation
+        rotateRightBtn.clicks()
+            .debounce(400)
+            .onEach {
+                rotateRight(imageView)
+            }
+            .launchIn(lifecycleScope)
     }
 
     private fun rotateLeft(imageView: ImageView) {
